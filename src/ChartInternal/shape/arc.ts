@@ -651,7 +651,7 @@ export default {
 
 		$$.hasType("gauge") && $$.redrawBackgroundArcs();
 
-		$$.redrawArcText(duration);
+		$$.redrawArcText(duration, withTransform);
 	},
 
 	redrawBackgroundArcs() {
@@ -812,7 +812,7 @@ export default {
 		}
 	},
 
-	redrawArcText(duration: number): void {
+	redrawArcText(duration: number, withTransform?: boolean): void {
 		const $$ = this;
 		const {config, state, $el: {main, arcs}} = $$;
 		const hasGauge = $$.hasType("gauge");
@@ -848,7 +848,7 @@ export default {
 				.attr("dy", ".75em")
 				.text(config.gauge_label_show ? config.gauge_units : "");
 
-				config.gauge_label_show && $$.drawGaugeLabels();
+				config.gauge_label_show && $$.drawGaugeLabels(withTransform);
 		}
 	}
 };

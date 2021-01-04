@@ -28,7 +28,7 @@ export default {
 
 			if (config.gauge_label_show) {
 				appendText(CLASS.chartArcsGaugeMin);
-				!config.gauge_fullCircle && appendText(CLASS.chartArcsGaugeMax);
+				appendText(CLASS.chartArcsGaugeMax);
 			}
 		}
 	},
@@ -116,20 +116,119 @@ export default {
 		return $$.getGaugeLabelHeight() * ($$.config.gauge_label_show ? 2 : 2.5);
 	},
 
-	drawGaugeLabels() {
+	drawGaugeLabels(withTransform) {
 		const $$ = this;
-		const { config, state, $el: {arcs} } = $$;
+		const {config, state, $el: {arcs}} = $$;
 		const isFullCircle = config.gauge_fullCircle;
+		const gaugeMinLabelSelection = arcs.select(`.${CLASS.chartArcsGaugeMin}`);
+		const gaugeMaxLabelSelection = arcs.select(`.${CLASS.chartArcsGaugeMax}`);
 
-		arcs.select(`.${CLASS.chartArcsGaugeMin}`)
-			.attr("dx", `${-1 * (state.innerRadius + ((state.radius - state.innerRadius) / (isFullCircle ? 1 : 2)))}px`)
-			.attr("dy", "1.2em")
-			.text($$.textForGaugeMinMax(config.gauge_min, false));
+		gaugeMinLabelSelection
+			.style("font-size", isFullCircle ? () => (`${Math.round(state.radius / 10)}px`) : null)
+			.text(`${$$.textForGaugeMinMax(config.gauge_min, false)}`);
 
-		// show max text when isn't fullCircle
-		!isFullCircle && arcs.select(`.${CLASS.chartArcsGaugeMax}`)
-			.attr("dx", `${state.innerRadius + ((state.radius - state.innerRadius) / 2)}px`)
-			.attr("dy", "1.2em")
-			.text($$.textForGaugeMinMax(config.gauge_max, true));
+		gaugeMaxLabelSelection
+			.style("font-size", isFullCircle ? () => (`${Math.round(state.radius / 10)}px`) : null)
+			.text(`${$$.textForGaugeMinMax(config.gauge_max, true)}`);
+
+		withTransform && this.transformGaugeLabels(gaugeMinLabelSelection, gaugeMaxLabelSelection);
+	},
+
+	transformGaugeLabels(gaugeMinLabelSelection, gaugeMaxLabelSelection) {
+		const $$ = this;
+		const {config, state} = $$;
+		const isFullCircle = config.gauge_fullCircle;
+		const startAngle = $$.getStartAngle();
+		const endAngle = isFullCircle ? startAngle + $$.getArcLength() : startAngle * -1;
+		const innerRadius = state.innerRadius;
+		const sinStartAngle = parseFloat(Math.sin(startAngle).toFixed(2));
+		const cosStartAngle = parseFloat(Math.cos(startAngle).toFixed(2)) * -1;
+		const sinEndAngle = parseFloat(Math.sin(endAngle).toFixed(2));
+		const cosEndAngle = parseFloat(Math.cos(endAngle).toFixed(2)) * -1;
+
+		const minLabelWidth = Math.ceil(gaugeMinLabelSelection.node().getComputedTextLength());
+		const minLabelHeight = parseInt(gaugeMinLabelSelection.style("font-size"), 10);
+
+		const maxLabelWidth = Math.ceil(gaugeMaxLabelSelection.node().getComputedTextLength());
+		const maxLabelHeight = parseInt(gaugeMaxLabelSelection.style("font-size"), 10);
+
+		const dxMinStart = getGaugeLabelXCoordinate(true);
+		const dyMinStart = getGaugeLabelYCoordinate(true);
+
+		const dxMaxStart = getGaugeLabelXCoordinate(false);
+		const dyMaxStart = getGaugeLabelYCoordinate(false);
+
+		gaugeMinLabelSelection
+			.attr("dx", `${dxMinStart}px`)
+			.attr("dy", `${dyMinStart}px`);
+
+		// hide gauge max label if it overlaps the min label
+		if (gaugeMinMaxLabelsOverlap()) {
+			gaugeMaxLabelSelection.style("display", "none");
+		} else {
+			gaugeMaxLabelSelection.style("display", null);
+			gaugeMaxLabelSelection
+				.attr("dx", `${dxMaxStart}px`)
+				.attr("dy", `${dyMaxStart}px`);
+		}
+
+		/**
+		 * @param {boolean} isMinLabel calculates coordinate for gauge min label, else gauge max label
+		 * @returns {number} returns x coordinate for gauge min or max label
+		 */
+		function getGaugeLabelXCoordinate(isMinLabel: boolean): number {
+			const sinAngle = isMinLabel ? sinStartAngle : sinEndAngle;
+			const textWidth = (isMinLabel ? minLabelWidth : maxLabelWidth);
+			const textHalfWidthWithMargin = (textWidth / 2) + 4; /* 4px margin between text and arc*/
+			const radius = innerRadius < 0 ?
+				innerRadius + textHalfWidthWithMargin :
+				innerRadius > 0 ?
+					innerRadius - textHalfWidthWithMargin :
+					0;
+			const innerRadiusWithTextWidth = isFullCircle ? innerRadius - textHalfWidthWithMargin : radius;
+
+			return sinAngle * innerRadiusWithTextWidth;
+		}
+
+		/**
+		 * @param {boolean} isMinLabel calculates coordinate for gauge min label, else gauge max label
+		 * @returns {number} returns y coordinate for gauge min or max label
+		 */
+		function getGaugeLabelYCoordinate(isMinLabel: boolean): number {
+			let angle;
+
+			if (isMinLabel) {
+				angle = startAngle;
+			} else {
+				if (endAngle < 0) {
+					angle = 2 * Math.PI + endAngle;
+				} else if (endAngle > 0) {
+					angle = 2 * Math.PI - endAngle;
+				} else {
+					angle = endAngle;
+				}
+			}
+
+			const cosAngle = isMinLabel ? cosStartAngle : cosEndAngle;
+			const textHeight = isMinLabel ? minLabelHeight : maxLabelHeight;
+			const angleUnderXAxis = angle < -0.5 * Math.PI || angle > 0.5 * Math.PI;
+			const angleOverXAxis = (-0.5 * Math.PI < angle && angle <= 0.5 * Math.PI) ||
+				(-1.5 * Math.PI < angle && angle >= 1.5 * Math.PI);
+			const positionFactor = angleOverXAxis ? 1 : angleUnderXAxis ? 1 / Math.PI : 0;
+
+			return cosAngle * (innerRadius - (textHeight * positionFactor));
+		}
+
+		/**
+		 * @returns {boolean} returns true if gauge max label overlaps gauge min label
+		 */
+		function gaugeMinMaxLabelsOverlap(): boolean {
+			const diffX = Math.ceil(Math.abs(dxMaxStart - dxMinStart));
+			const overlapsX = diffX <= (/*maxLabelWidth - */minLabelWidth);
+			const diffY = Math.ceil(Math.abs(dyMaxStart - dyMinStart));
+			const overlapsY = diffY <= minLabelHeight;
+
+			return overlapsX && overlapsY;
+		}
 	}
 };
