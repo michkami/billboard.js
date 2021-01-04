@@ -114,5 +114,22 @@ export default {
 		const $$ = this;
 
 		return $$.getGaugeLabelHeight() * ($$.config.gauge_label_show ? 2 : 2.5);
+	},
+
+	drawGaugeLabels() {
+		const $$ = this;
+		const { config, state, $el: {arcs} } = $$;
+		const isFullCircle = config.gauge_fullCircle;
+
+		arcs.select(`.${CLASS.chartArcsGaugeMin}`)
+			.attr("dx", `${-1 * (state.innerRadius + ((state.radius - state.innerRadius) / (isFullCircle ? 1 : 2)))}px`)
+			.attr("dy", "1.2em")
+			.text($$.textForGaugeMinMax(config.gauge_min, false));
+
+		// show max text when isn't fullCircle
+		!isFullCircle && arcs.select(`.${CLASS.chartArcsGaugeMax}`)
+			.attr("dx", `${state.innerRadius + ((state.radius - state.innerRadius) / 2)}px`)
+			.attr("dy", "1.2em")
+			.text($$.textForGaugeMinMax(config.gauge_max, true));
 	}
 };

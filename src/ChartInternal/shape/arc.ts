@@ -842,26 +842,13 @@ export default {
 			.style("opacity", $$.hasType("donut") || hasGauge ? "1" : "0");
 
 		if (hasGauge) {
-			const isFullCircle = config.gauge_fullCircle;
-
-			isFullCircle && text && text.attr("dy", `${hasMultiArcGauge ? 0 : Math.round(state.radius / 14)}`);
+			config.gauge_fullCircle && text && text.attr("dy", `${hasMultiArcGauge ? 0 : Math.round(state.radius / 14)}`);
 
 			arcs.select(`.${CLASS.chartArcsGaugeUnit}`)
 				.attr("dy", ".75em")
 				.text(config.gauge_label_show ? config.gauge_units : "");
 
-			if (config.gauge_label_show) {
-				arcs.select(`.${CLASS.chartArcsGaugeMin}`)
-					.attr("dx", `${-1 * (state.innerRadius + ((state.radius - state.innerRadius) / (isFullCircle ? 1 : 2)))}px`)
-					.attr("dy", "1.2em")
-					.text($$.textForGaugeMinMax(config.gauge_min, false));
-
-				// show max text when isn't fullCircle
-				!isFullCircle && arcs.select(`.${CLASS.chartArcsGaugeMax}`)
-					.attr("dx", `${state.innerRadius + ((state.radius - state.innerRadius) / 2)}px`)
-					.attr("dy", "1.2em")
-					.text($$.textForGaugeMinMax(config.gauge_max, true));
-			}
+				config.gauge_label_show && $$.drawGaugeLabels();
 		}
 	}
 };
