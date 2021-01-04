@@ -848,7 +848,7 @@ export default {
 				.attr("dy", ".75em")
 				.text(config.gauge_label_show ? config.gauge_units : "");
 
-				config.gauge_label_show && $$.drawGaugeLabels(withTransform);
+			config.gauge_label_show && $$.drawGaugeLabels(withTransform);
 		}
 	}
 };

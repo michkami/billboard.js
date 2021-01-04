@@ -332,7 +332,7 @@ export default {
 		state.arcHeight = state.height - (isLegendRight && !hasGauge ? 0 : 10);
 
 		if (hasGauge && !config.gauge_fullCircle) {
-			state.arcHeight += state.height - $$.getPaddingBottomForGauge();
+			state.arcHeight += state.height - 10;
 		}
 
 		$$.updateRadius && $$.updateRadius();

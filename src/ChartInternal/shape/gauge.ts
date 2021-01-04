@@ -110,12 +110,6 @@ export default {
 		return this.config.gauge_label_show && !config.gauge_fullCircle ? 20 : 0;
 	},
 
-	getPaddingBottomForGauge() {
-		const $$ = this;
-
-		return $$.getGaugeLabelHeight() * ($$.config.gauge_label_show ? 2 : 2.5);
-	},
-
 	drawGaugeLabels(withTransform) {
 		const $$ = this;
 		const {config, state, $el: {arcs}} = $$;
@@ -141,6 +135,7 @@ export default {
 		const startAngle = $$.getStartAngle();
 		const endAngle = isFullCircle ? startAngle + $$.getArcLength() : startAngle * -1;
 		const innerRadius = state.innerRadius;
+
 		const sinStartAngle = parseFloat(Math.sin(startAngle).toFixed(2));
 		const cosStartAngle = parseFloat(Math.cos(startAngle).toFixed(2)) * -1;
 		const sinEndAngle = parseFloat(Math.sin(endAngle).toFixed(2));
@@ -224,7 +219,7 @@ export default {
 		 */
 		function gaugeMinMaxLabelsOverlap(): boolean {
 			const diffX = Math.ceil(Math.abs(dxMaxStart - dxMinStart));
-			const overlapsX = diffX <= (/*maxLabelWidth - */minLabelWidth);
+			const overlapsX = diffX <= (maxLabelWidth - minLabelWidth);
 			const diffY = Math.ceil(Math.abs(dyMaxStart - dyMinStart));
 			const overlapsY = diffY <= minLabelHeight;
 
